@@ -6,8 +6,6 @@ import json
 import os
 import nest_asyncio
 from datetime import datetime, timezone
-from dotenv import load_dotenv
-load_dotenv()
 
 nest_asyncio.apply()
 
