@@ -5,7 +5,12 @@ import random
 import json
 import os
 import nest_asyncio
+import threading
 from datetime import datetime, timezone
+from dotenv import load_dotenv
+from flask import Flask
+
+load_dotenv()
 
 nest_asyncio.apply()
 
@@ -176,6 +181,20 @@ async def on_voice_state_update(member, before, after):
             print(f"{human_name} joined VC: {after.channel.name}")
         elif before.channel:
             print(f"{human_name} left VC: {before.channel.name}")
+
+# Start a simple Flask web server to listen on a port so Render detects it as a web service.
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+
+# Start Flask in a separate thread before launching the Discord bot
+threading.Thread(target=run_flask).start()
 
 async def start_bot():
     await client.start(DISCORD_BOT_TOKEN)
