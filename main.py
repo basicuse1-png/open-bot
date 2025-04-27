@@ -109,9 +109,9 @@ async def generate_response(prompt):
         if res.status_code == 200:
             return res.json()['choices'][0]['message']['content'].strip()
         else:
-            return "idk lol"
+            return "Hmm, not sure about that..."
     except:
-        return "bro i have to GTG bye"
+        return "I'm not sure... let me think for a bit."
 
 # Simulate typing delay
 async def simulate_typing(channel, msg):
@@ -123,7 +123,7 @@ async def simulate_typing(channel, msg):
 @client.event
 async def on_ready():
     print(f"{bot_name} aka {human_name} online")
-    await client.change_presence(status=discord.Status.online, activity=discord.Game(name="just chillin"))
+    await client.change_presence(status=discord.Status.online, activity=discord.Game(name="just thinking"))
 
 # Discord bot event on message
 @client.event
@@ -192,13 +192,13 @@ async def on_message(message):
 
         if mentioned_bot or is_recent_focus or msg.startswith(bot_name.lower()) or msg.startswith(human_name.lower()):
             client.focus_users[user_id] = now  # update last focus time
-            prompt = f"You're {bot_name}, a chill US dude. Talk like you're relaxed and real. Short replies, no emojis. Reply to: {msg}"
+            prompt = f"You're {bot_name}, a chill US dude. Talk like you're thinking and real. Reply to: {msg}"
             response = await generate_response(prompt)
             await simulate_typing(message.channel, response)
             await message.channel.send(response)
 
         elif random.random() < 0.1:
-            response = await generate_response(f"React casually like a real dude. Respond to: {msg}")
+            response = await generate_response(f"React like you're deep in thought. Respond to: {msg}")
             await simulate_typing(message.channel, response)
             await message.channel.send(response)
 
