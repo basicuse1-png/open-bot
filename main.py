@@ -12,25 +12,25 @@ from flask import Flask
 import os
 from threading import Thread
 
-app = Flask('')
+app = Flask(__name__)
 
 @app.route('/')
 def home():
     return "I'm alive!"
 
 def run():
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    port = int(os.environ.get("PORT", 8080))  # Default to 8080 instead of 5000 (more Render-friendly)
+    app.run(host="0.0.0.0", port=port)
 
 def keep_alive():
-    t = Thread(target=run)
-    t.start()
+    server = Thread(target=run)
+    server.daemon = True  # Automatically closes with main program
+    server.start()
 
-# Call keep_alive() before starting your main bot logic
-keep_alive()
-
-# Your bot code below...
-
+# Call this before starting the bot
+if __name__ == "__main__":
+    keep_alive()
+    
 load_dotenv()
 
 nest_asyncio.apply()
