@@ -9,6 +9,27 @@ import threading
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 from flask import Flask
+import os
+from threading import Thread
+
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "I'm alive!"
+
+def run():
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# Call keep_alive() before starting your main bot logic
+keep_alive()
+
+# Your bot code below...
 
 load_dotenv()
 
@@ -202,3 +223,4 @@ async def start_bot():
 loop = asyncio.get_event_loop()
 loop.create_task(start_bot())
 loop.run_forever()
+
