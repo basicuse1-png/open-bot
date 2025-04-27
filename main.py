@@ -12,6 +12,7 @@ from flask import Flask
 import os
 from threading import Thread
 
+# Initialize Flask app
 app = Flask(__name__)
 
 @app.route('/')
@@ -19,7 +20,7 @@ def home():
     return "I'm alive!"
 
 def run():
-    port = int(os.environ.get("PORT", 8080))  # Default to 8080 instead of 5000 (more Render-friendly)
+    port = int(os.environ.get("PORT", 8080))  # Default to 8080 for Render compatibility
     app.run(host="0.0.0.0", port=port)
 
 def keep_alive():
@@ -30,11 +31,14 @@ def keep_alive():
 # Call this before starting the bot
 if __name__ == "__main__":
     keep_alive()
-    
+
+# Load environment variables
 load_dotenv()
 
+# Apply patch for nested event loops (for compatibility with Flask and asyncio)
 nest_asyncio.apply()
 
+# Fetch environment variables
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OWNER_ID = os.getenv("OWNER_ID")
@@ -43,12 +47,14 @@ MEMORY_FILE = "memory.json"
 BLOCKED_CHANNELS_FILE = "blocked_channels.json"
 MAX_MEMORY_ENTRIES = 500
 
+# Initialize Discord intents
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
 
 bot_name = "Aren"
 human_name = "Alex"
 
+# Blocked channel functions
 def load_blocked_channels():
     if not os.path.exists(BLOCKED_CHANNELS_FILE):
         return []
@@ -64,6 +70,7 @@ def save_blocked_channels(channels):
 
 blocked_channels = load_blocked_channels()
 
+# Memory functions
 def load_memory():
     if not os.path.exists(MEMORY_FILE):
         with open(MEMORY_FILE, "w") as f:
@@ -82,6 +89,7 @@ def save_memory(mem):
 
 memory = load_memory()
 
+# OpenRouter API request headers and payload
 def get_headers():
     return {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -94,6 +102,7 @@ def create_payload(msg):
         "messages": [{"role": "user", "content": msg}]
     }
 
+# Async function to generate response
 async def generate_response(prompt):
     try:
         res = requests.post(API_URL, headers=get_headers(), json=create_payload(prompt))
@@ -104,16 +113,19 @@ async def generate_response(prompt):
     except:
         return "bro i have to GTG bye"
 
+# Simulate typing delay
 async def simulate_typing(channel, msg):
     delay = max(len(msg.split()) * 2, 1.2)
     async with channel.typing():
         await asyncio.sleep(min(delay, 8))
 
+# Discord bot event when ready
 @client.event
 async def on_ready():
     print(f"{bot_name} aka {human_name} online")
     await client.change_presence(status=discord.Status.online, activity=discord.Game(name="just chillin"))
 
+# Discord bot event on message
 @client.event
 async def on_message(message):
     global blocked_channels
@@ -125,6 +137,7 @@ async def on_message(message):
     channel_id = message.channel.id
     response = None
 
+    # Block/unblock commands
     if message.content.startswith("!arenblock") and str(message.author.id) == OWNER_ID:
         if channel_id not in blocked_channels:
             blocked_channels.append(channel_id)
@@ -143,9 +156,11 @@ async def on_message(message):
             await message.channel.send("Not blocked.")
         return
 
+    # Skip message if channel is blocked
     if channel_id in blocked_channels:
         return
 
+    # Respond to mentions of the bot
     if human_name.lower() in msg and bot_name.lower() not in msg:
         response = f"nah i'm {bot_name}"
         await message.channel.send(response)
@@ -187,6 +202,7 @@ async def on_message(message):
             await simulate_typing(message.channel, response)
             await message.channel.send(response)
 
+    # Save conversation memory
     memory['convos'].append({
         "user": str(message.author),
         "message": msg,
@@ -195,6 +211,7 @@ async def on_message(message):
     })
     save_memory(memory)
 
+# Voice state update event
 @client.event
 async def on_voice_state_update(member, before, after):
     if member == client.user:
@@ -203,13 +220,7 @@ async def on_voice_state_update(member, before, after):
         elif before.channel:
             print(f"{human_name} left VC: {before.channel.name}")
 
-# Start a simple Flask web server to listen on a port so Render detects it as a web service.
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Bot is running!"
-
+# Start Flask web server to detect the bot as a web service for Render
 def run_flask():
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
@@ -217,10 +228,10 @@ def run_flask():
 # Start Flask in a separate thread before launching the Discord bot
 threading.Thread(target=run_flask).start()
 
+# Start Discord bot
 async def start_bot():
     await client.start(DISCORD_BOT_TOKEN)
 
 loop = asyncio.get_event_loop()
 loop.create_task(start_bot())
 loop.run_forever()
-
